@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // MongoDB Atlas connection
-const MONGO_URI = "mongodb+srv://ayu:ayu@forge.n8nrpmj.mongodb.net/?retryWrites=true&w=majority&appName=Forge";
+const MONGO_URI = "mongodb+srv://ayu:ayu@forge.n8nrpmj.mongodb.net/dreamDB?retryWrites=true&w=majority";
 
 mongoose.connect(MONGO_URI, {
     useNewUrlParser: true,
