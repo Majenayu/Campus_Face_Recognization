@@ -75,17 +75,29 @@
                     <div class="w-20 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mx-auto"></div>
                 </div>
                 
-                <form id="register-form-submit" class="space-y-5">
-                    <input id="register-name" type="text" placeholder="Enter your name"
-                        class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400">
-                    <input id="register-email" type="email" placeholder="Enter your email" required
-                        class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400">
-                    <input id="register-password" type="password" placeholder="Create a password" required
-                        class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400">
-                    <input id="register-confirm-password" type="password" placeholder="Confirm your password" required
-                        class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400">
-                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-xl pulse-button">Register</button>
-                </form>
+                <form id="register-form-submit" class="space-y-5" enctype="multipart/form-data">
+  <input id="register-name" type="text" placeholder="Name" class="input" required />
+  <input id="register-email" type="email" placeholder="Email" class="input" required />
+  <input id="register-password" type="password" placeholder="Password" class="input" required />
+  <input id="register-confirm-password" type="password" placeholder="Confirm Password" class="input" required />
+
+  <!-- Upload -->
+  <input id="photo-upload" type="file" multiple accept="image/*"
+    class="w-full text-white" />
+
+  <!-- Camera -->
+  <video id="video" autoplay class="w-full rounded-lg"></video>
+  <button type="button" id="capture" class="bg-blue-500 px-4 py-2 rounded">
+    Capture Photo
+  </button>
+
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <button type="submit" class="w-full py-3 bg-purple-600 rounded-xl">
+    Register
+  </button>
+</form>
+
                 
                 <div class="text-center">
                     <span class="text-white/70">Already have an account?</span>
@@ -97,89 +109,126 @@
         </div>
     </div>
 
-    <script>
-        function toggleForm(showRegister) {
-            document.getElementById('login-form').classList.toggle('hidden', showRegister);
-            document.getElementById('register-form').classList.toggle('hidden', !showRegister);
-        }
+  <script>
+/* ---------- TOGGLE LOGIN / REGISTER ---------- */
+function toggleForm(showRegister) {
+  document.getElementById('login-form').classList.toggle('hidden', showRegister);
+  document.getElementById('register-form').classList.toggle('hidden', !showRegister);
+}
+document.getElementById('show-register').onclick = () => toggleForm(true);
+document.getElementById('show-login').onclick = () => toggleForm(false);
 
-        document.getElementById('show-register').addEventListener('click', () => toggleForm(true));
-        document.getElementById('show-login').addEventListener('click', () => toggleForm(false));
+/* ---------- LOADER ---------- */
+function toggleLoader(show) {
+  document.getElementById('loader').classList.toggle('hidden', !show);
+}
 
-        function toggleLoader(show) {
-            document.getElementById('loader').classList.toggle('hidden', !show);
-        }
+/* ---------- CAMERA SETUP ---------- */
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const captureBtn = document.getElementById("capture");
+const photoInput = document.getElementById("photo-upload");
+const capturedImages = [];
 
-        // Handle login
-        document.getElementById('login-form-submit').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            toggleLoader(true);
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream)
+  .catch(() => console.warn("Camera access denied"));
 
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const errorEl = document.getElementById('login-error');
+captureBtn.onclick = () => {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    capturedImages.push(blob);
+    alert("Photo captured ✔");
+  }, "image/jpeg");
+};
 
-            try {
-                const res = await fetch('/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-                toggleLoader(false);
+/* ---------- LOGIN ---------- */
+document.getElementById("login-form-submit").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  toggleLoader(true);
 
-                if (data.success) {
-                    window.location.href = '/dashboard';
-                } else {
-                    errorEl.textContent = data.error || 'Login failed';
-                    errorEl.classList.remove('hidden');
-                }
-            } catch {
-                toggleLoader(false);
-                errorEl.textContent = 'Login failed. Please try again.';
-                errorEl.classList.remove('hidden');
-            }
-        });
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+  const errorEl = document.getElementById("login-error");
 
-        // Handle register
-        document.getElementById('register-form-submit').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            toggleLoader(true);
+  try {
+    const res = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
 
-            const name = document.getElementById('register-name').value;
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            const confirmPassword = document.getElementById('register-confirm-password').value;
-            const errorEl = document.getElementById('register-error');
+    const data = await res.json();
+    toggleLoader(false);
 
-            if (password !== confirmPassword) {
-                toggleLoader(false);
-                errorEl.textContent = 'Passwords do not match';
-                errorEl.classList.remove('hidden');
-                return;
-            }
+    if (data.success) {
+    localStorage.setItem("userEmail", email);
+    window.location.href = '/dashboard';
+}
 
-            try {
-                const res = await fetch('/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
-                });
-                const data = await res.json();
-                toggleLoader(false);
+    else {
+      errorEl.textContent = "Invalid credentials";
+      errorEl.classList.remove("hidden");
+    }
+  } catch {
+    toggleLoader(false);
+  }
+});
 
-                if (data.success) {
-                    window.location.href = '/dashboard';
-                } else {
-                    errorEl.textContent = data.error || 'Registration failed';
-                    errorEl.classList.remove('hidden');
-                }
-            } catch {
-                toggleLoader(false);
-                errorEl.textContent = 'Registration failed. Please try again.';
-                errorEl.classList.remove('hidden');
-            }
-        });
-    </script>
+/* ---------- REGISTER (SINGLE, CORRECT HANDLER) ---------- */
+document.getElementById("register-form-submit").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  toggleLoader(true);
+
+  const name = document.getElementById("register-name").value;
+  const email = document.getElementById("register-email").value;
+  const password = document.getElementById("register-password").value;
+  const confirm = document.getElementById("register-confirm-password").value;
+  const errorEl = document.getElementById("register-error");
+
+  if (password !== confirm) {
+    toggleLoader(false);
+    errorEl.textContent = "Passwords do not match";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append("name", name);
+  fd.append("email", email);
+  fd.append("password", password);
+
+  for (const file of photoInput.files) fd.append("photos", file);
+  for (const blob of capturedImages) fd.append("photos", blob);
+
+  try {
+    const res = await fetch("/register", {
+      method: "POST",
+      body: fd
+    });
+
+    const data = await res.json();
+    toggleLoader(false);
+
+   if (data.success) {
+    localStorage.setItem("userEmail", email);
+    window.location.href = '/dashboard';
+}
+
+else {
+      errorEl.textContent = data.error;
+      errorEl.classList.remove("hidden");
+    }
+  } catch (err) {
+    toggleLoader(false);
+    errorEl.textContent = "Registration failed";
+    errorEl.classList.remove("hidden");
+  }
+});
+</script>
+
+
 </body>
 </html>

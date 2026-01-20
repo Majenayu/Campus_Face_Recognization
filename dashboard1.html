@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ✅ FACE API BROWSER BUILD -->
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+</head>
+
+<body class="bg-black text-white min-h-screen p-6">
+
+<h1 class="text-3xl font-bold mb-4">Welcome to Dashboard</h1>
+
+<input id="driveLink" placeholder="Paste Google Drive Folder Link"
+       class="w-full p-2 text-black rounded mb-4"/>
+
+<button onclick="scanDrive()"
+        class="bg-purple-600 px-4 py-2 rounded">
+  Scan Drive
+</button>
+
+
+
+
+<!-- Notification -->
+<div id="status"
+  class="fixed top-4 right-4 bg-black/70 text-white px-4 py-2 rounded hidden z-50">
+</div>
+
+<!-- Results -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6" id="results"></div>
+
+<!-- Loader Overlay -->
+<div id="loader" class="fixed inset-0 flex items-center justify-center bg-black/90 z-50 hidden flex-col">
+  <div class="text-white text-2xl mb-4" id="loader-text">Preparing...</div>
+  <div class="w-20 h-20 border-8 border-white/20 border-t-white rounded-full animate-spin"></div>
+</div>
+
+
+
+<script>
+
+  const statusBox = document.getElementById("status");
+const resultsDiv = document.getElementById("results");
+const loaderText = document.getElementById("loader-text");
+
+
+function setStatus(msg, isPersistent = false) {
+  statusBox.textContent = msg;
+  statusBox.classList.remove("hidden");
+  if (!isPersistent) {
+    setTimeout(() => statusBox.classList.add("hidden"), 5000); // Longer visibility
+  }
+}
+
+function showLoader(msg = "Scanning... Please wait") {
+  loaderText.textContent = msg;
+  document.getElementById('loader').classList.remove('hidden');
+}
+
+function hideLoader() {
+  document.getElementById('loader').classList.add('hidden');
+}
+
+function showImage(url) {
+  const img = document.createElement("img");
+  img.src = url;
+  img.className = "rounded shadow border";
+  resultsDiv.appendChild(img);
+}
+
+const email = localStorage.getItem("userEmail");
+let userDescriptors = [];
+
+/* ================= LOAD MODELS ================= */
+async function loadModels() {
+  await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
+  await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
+  await faceapi.nets.faceRecognitionNet.loadFromUri("/models");
+  console.log("✅ Face-API models loaded");
+}
+
+/* ================= LOAD USER FACE DATA ================= */
+async function loadUserFaces() {
+  const res = await fetch("/user-faces", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+
+  const data = await res.json();
+  if (!data.success) return;
+
+  for (const url of data.faces) {
+    const img = await faceapi.fetchImage(url);
+    const det = await faceapi
+      .detectSingleFace(img)
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    if (det) userDescriptors.push(det.descriptor);
+  }
+}
+
+async function scanDrive() {
+  resultsDiv.innerHTML = ''; // Clear old results
+  showLoader("Loading models & your face data...");
+
+  try {
+    await loadModels();
+    setStatus("✅ Models loaded");
+
+    const email = localStorage.getItem("userEmail");
+    const userRes = await fetch("/user-faces", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const userData = await userRes.json();
+
+    if (!userData.success || !userData.faces?.length) {
+      hideLoader();
+      setStatus("❌ No reference photos found. Upload some in registration.");
+      return;
+    }
+
+    const userDescriptors = [];
+    for (const url of userData.faces) {
+      try {
+        const img = await faceapi.fetchImage(url);
+        const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+        if (detection) userDescriptors.push(detection.descriptor);
+      } catch (e) {
+        console.warn("Failed to load reference photo:", url, e);
+      }
+    }
+
+    console.log(`Loaded ${userDescriptors.length} reference face descriptors`);
+    if (userDescriptors.length === 0) {
+      hideLoader();
+      setStatus("❌ No faces detected in your uploaded photos. Try better frontal photos.");
+      return;
+    }
+
+    const labeledDescriptors = new faceapi.LabeledFaceDescriptors('me', userDescriptors);
+    const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.62); // Looser for testing
+
+    setStatus("Fetching Drive images...");
+    const driveLink = document.getElementById("driveLink").value;
+
+    const scanRes = await fetch("/scan-drive", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ driveLink, email })
+    });
+    const scanData = await scanRes.json();
+
+    if (!scanData.success) {
+      hideLoader();
+      setStatus("❌ " + (scanData.error || "Failed to scan Drive folder"));
+      return;
+    }
+
+    const totalImages = scanData.matches.length;
+    if (totalImages === 0) {
+      hideLoader();
+      setStatus("⚠️ No images found in the Drive folder");
+      return;
+    }
+
+    let matchCount = 0;
+    let processed = 0;
+
+    showLoader(`Analysing images... 0/${totalImages}`);
+
+    for (const file of scanData.matches) {
+      processed++;
+      loaderText.textContent = `Analysing ${processed}/${totalImages} images...`;
+
+      try {
+        const img = await faceapi.fetchImage(file.image);
+
+        const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+
+        console.log(`Processing: ${file.name} → ${detections.length} face(s) detected`);
+
+        let isMatch = false;
+        for (const detection of detections) {
+          const bestMatch = matcher.findBestMatch(detection.descriptor);
+          console.log(`  → Distance: ${bestMatch.distance.toFixed(3)}, Label: ${bestMatch.label}`);
+
+          if (bestMatch.label === 'me') {
+            isMatch = true;
+            break;
+          }
+        }
+
+        if (isMatch) {
+          matchCount++;
+          setStatus(`✅ Match #${matchCount} found!`, false);
+
+          // Save to Cloudinary
+          const saveRes = await fetch("/save-match", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, imageUrl: file.image })
+          });
+          const saveData = await saveRes.json();
+
+          const displayUrl = saveData.success && saveData.url ? saveData.url : file.image;
+          showImage(displayUrl);
+        }
+      } catch (e) {
+        console.warn("Failed to process image:", file.name, e);
+      }
+    }
+
+    hideLoader();
+    setStatus(matchCount > 0 
+      ? `🎉 Scan complete! Found ${matchCount} photo(s) of you.` 
+      : "Scan complete – No matches found. Try better reference photos or looser threshold.", false);
+
+  } catch (err) {
+    hideLoader();
+    console.error("Scan error:", err);
+    setStatus("❌ Scan failed. Check console for details.");
+  }
+}
+
+
+
+async function loadSavedMatches() {
+  const res = await fetch("/get-matches", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+
+  const data = await res.json();
+  if (!data.success) return;
+
+  for (const url of data.matches) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.className = "rounded shadow";
+    document.getElementById("results").appendChild(img);
+  }
+}
+
+window.onload = async () => {
+  await loadSavedMatches(); // This will display previously saved matches
+};
+
+
+
+
+</script>
+
+
+</body>
+</html>

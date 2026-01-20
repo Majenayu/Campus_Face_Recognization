@@ -12,10 +12,23 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "bcryptjs": "^3.0.2",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.0",
+    "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "mongoose": "^8.18.1"
-  }
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^8.21.0",
+    "multer": "^2.0.2",
+    "streamifier": "^0.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Majenayu/Forge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Majenayu/Forge/issues"
+  },
+  "homepage": "https://github.com/Majenayu/Forge#readme"
 }
