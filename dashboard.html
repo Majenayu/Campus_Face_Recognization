@@ -2,140 +2,542 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dream Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
-
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-8">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6">Face Match Dashboard</h1>
-        
-        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
-            <label class="block mb-2 text-sm">Paste Google Drive Folder Link:</label>
-            <div class="flex gap-4">
-                <input id="driveLink" type="text" placeholder="https://drive.google.com/drive/folders/..." 
-                       class="flex-1 p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button onclick="startScan()" id="scanBtn" class="bg-blue-600 px-6 py-3 rounded font-bold hover:bg-blue-700 transition">Start Scan</button>
+<body class="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white min-h-screen">
+    
+    <!-- Loading Overlay -->
+    <div id="loader" class="fixed inset-0 bg-black/95 flex items-center justify-center z-50 hidden">
+        <div class="text-center max-w-md px-6">
+            <div class="relative mb-6">
+                <div class="w-24 h-24 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <span id="progress-percent" class="text-2xl font-bold text-purple-400">0%</span>
+                </div>
             </div>
-            <p id="status" class="mt-4 text-blue-400 font-medium"></p>
+            <p id="loader-text" class="text-xl text-white mb-2">Processing...</p>
+            <p id="loader-progress" class="text-sm text-gray-400 mb-4"></p>
+            <div class="bg-gray-800 rounded-full h-2 overflow-hidden">
+                <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    🔍 Dream Dashboard
+                </h1>
+                <p class="text-gray-400 mt-1 text-sm">AI-powered face matching</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="downloadAllImages()" class="bg-green-600 px-6 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    Download All
+                </button>
+                <button onclick="logout()" class="bg-red-600 px-6 py-2 rounded-lg hover:bg-red-700 transition">
+                    Logout
+                </button>
+            </div>
         </div>
 
-        <h2 class="text-xl mb-4">Matches Found</h2>
-        <div id="results" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Scan Section -->
+        <div class="bg-white/10 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl mb-6 border border-white/20">
+            <h2 class="text-xl md:text-2xl font-bold mb-3">📂 Scan Google Drive Folder</h2>
+            
+            <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+                <p class="text-yellow-300 text-sm">⚠️ <strong>Important:</strong> Make the folder PUBLIC (Right-click → Share → Anyone with link)</p>
             </div>
+            
+            <div class="flex flex-col md:flex-row gap-3 mb-4">
+                <input 
+                    id="driveLink" 
+                    type="text" 
+                    placeholder="Paste: https://drive.google.com/drive/folders/..." 
+                    class="flex-1 p-4 rounded-lg bg-white/5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white placeholder-gray-500 text-sm"
+                >
+                <button 
+                    onclick="startScan()" 
+                    id="scanBtn" 
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                    🚀 Start Scan
+                </button>
+            </div>
+
+            <!-- Advanced Settings -->
+            <details class="bg-white/5 rounded-lg p-4">
+                <summary class="cursor-pointer text-sm font-semibold text-purple-300">⚙️ Advanced Settings</summary>
+                <div class="mt-4 space-y-3">
+                    <div>
+                        <label class="text-sm text-gray-300 block mb-2">Match Threshold (Lower = More Matches)</label>
+                        <input type="range" id="threshold" min="0.3" max="0.7" step="0.05" value="0.55" class="w-full">
+                        <span id="thresholdValue" class="text-xs text-gray-400">0.55</span>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-300 block mb-2">Batch Size (Processes images simultaneously)</label>
+                        <select id="batchSize" class="w-full p-2 rounded bg-white/10 border border-white/20 text-white">
+                            <option value="5">5 images/batch (Slow, stable)</option>
+                            <option value="10" selected>10 images/batch (Balanced)</option>
+                            <option value="15">15 images/batch (Fast)</option>
+                            <option value="20">20 images/batch (Very fast, needs good PC)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-300 block mb-2">Max Images to Scan</label>
+                        <select id="maxImages" class="w-full p-2 rounded bg-white/10 border border-white/20 text-white">
+                            <option value="100">100 images</option>
+                            <option value="200">200 images</option>
+                            <option value="500" selected>500 images</option>
+                            <option value="1000">1000 images</option>
+                            <option value="-1">Unlimited (Scan all)</option>
+                        </select>
+                    </div>
+                </div>
+            </details>
+            
+            <div id="status" class="mt-4 p-4 rounded-lg hidden"></div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center border border-white/20">
+                <p class="text-4xl font-bold text-purple-400" id="totalPhotos">0</p>
+                <p class="text-gray-300 mt-2 text-sm">Photos Scanned</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center border border-white/20">
+                <p class="text-4xl font-bold text-green-400" id="matchesFound">0</p>
+                <p class="text-gray-300 mt-2 text-sm">Matches Found</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center border border-white/20">
+                <p class="text-4xl font-bold text-yellow-400" id="accuracy">0%</p>
+                <p class="text-gray-300 mt-2 text-sm">Match Rate</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center border border-white/20">
+                <p class="text-4xl font-bold text-blue-400" id="scanTime">0s</p>
+                <p class="text-gray-300 mt-2 text-sm">Scan Time</p>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="mb-4 flex justify-between items-center">
+            <h2 class="text-xl md:text-2xl font-bold">📸 Your Photos</h2>
+            <button onclick="clearResults()" class="text-sm bg-red-500/20 hover:bg-red-500/30 px-4 py-2 rounded-lg transition">
+                Clear All
+            </button>
+        </div>
+        
+        <div id="results" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+        
+        <p id="emptyState" class="text-center text-gray-400 mt-12 hidden">
+            No matches yet. Scan a folder to find your photos! 📂
+        </p>
     </div>
 
     <script>
-        let faceMatcher = null;
         const userEmail = localStorage.getItem("userEmail");
+        if (!userEmail) {
+            window.location.href = "/";
+        }
 
-        if (!userEmail) window.location.href = "/";
+        let totalScanned = 0;
+        let totalMatches = 0;
+        let faceMatcher = null;
+        let isScanning = false;
+        let modelsLoaded = false;
+        let scanStartTime = 0;
+        let foundUrls = new Set();
 
-        // 1. Load AI Models and User Face on Page Load
-      async function init() {
-    const scanBtn = document.getElementById('scanBtn');
-    scanBtn.disabled = true; // Disable button while loading
-    
-    document.getElementById('status').innerText = "⏳ Loading AI models...";
-    const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
-    
-    try {
-        await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-
-        document.getElementById('status').innerText = "⏳ Fetching your profile face...";
-        
-        const res = await fetch('/user-faces', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ email: userEmail })
+        // Threshold slider
+        document.getElementById('threshold').addEventListener('input', (e) => {
+            document.getElementById('thresholdValue').textContent = e.target.value;
         });
-        const data = await res.json();
 
-        if (data.success && data.faces.length > 0) {
-            const img = await faceapi.fetchImage(data.faces[0]);
-            const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+        // Update progress
+        function updateProgress(percent, text) {
+            document.getElementById('progress-percent').textContent = Math.round(percent) + '%';
+            document.getElementById('progress-bar').style.width = percent + '%';
+            if (text) document.getElementById('loader-progress').textContent = text;
+        }
+
+        // Status message
+        function setStatus(msg, type = 'info') {
+            const statusBox = document.getElementById('status');
+            statusBox.classList.remove('hidden', 'bg-blue-500/20', 'border-blue-500/30', 'bg-green-500/20', 'border-green-500/30', 'bg-red-500/20', 'border-red-500/30', 'text-blue-300', 'text-green-300', 'text-red-300');
             
-            if (detections) {
-                faceMatcher = new faceapi.FaceMatcher(detections);
-                document.getElementById('status').innerText = "✅ Ready to scan.";
-                scanBtn.disabled = false; // Re-enable button
+            if (type === 'success') {
+                statusBox.classList.add('bg-green-500/20', 'border-green-500/30', 'border', 'text-green-300');
+            } else if (type === 'error') {
+                statusBox.classList.add('bg-red-500/20', 'border-red-500/30', 'border', 'text-red-300');
+            } else {
+                statusBox.classList.add('bg-blue-500/20', 'border-blue-500/30', 'border', 'text-blue-300');
+            }
+            statusBox.textContent = msg;
+        }
+
+        function showLoader(text) {
+            document.getElementById('loader').classList.remove('hidden');
+            document.getElementById('loader-text').textContent = text;
+            updateProgress(0, '');
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').classList.add('hidden');
+        }
+
+        function updateStats() {
+            document.getElementById('totalPhotos').textContent = totalScanned;
+            document.getElementById('matchesFound').textContent = totalMatches;
+            const accuracy = totalScanned > 0 ? Math.round((totalMatches / totalScanned) * 100) : 0;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            
+            if (scanStartTime > 0) {
+                const elapsed = Math.round((Date.now() - scanStartTime) / 1000);
+                document.getElementById('scanTime').textContent = elapsed + 's';
             }
         }
-    } catch (err) {
-        document.getElementById('status').innerText = "❌ Initialization error.";
-        console.error(err);
-    }
-}
-        // 2. The Scanning Logic
-        async function startScan() {
-            const link = document.getElementById('driveLink').value;
-            const status = document.getElementById('status');
-            const resultsDiv = document.getElementById('results');
 
-            if (!link) return alert("Please paste a link");
+        function displayMatch(url, fileId) {
+            if (foundUrls.has(fileId)) return;
+            foundUrls.add(fileId);
             
-            status.innerText = "🔍 Connecting to Google Drive...";
+            const resultsDiv = document.getElementById('results');
+            document.getElementById('emptyState').classList.add('hidden');
+            
+            const div = document.createElement('div');
+            div.className = 'relative group overflow-hidden rounded-xl border-2 border-green-500 shadow-xl transform hover:scale-105 transition duration-300';
+            div.innerHTML = `
+                <img src="${url}" class="w-full h-48 md:h-64 object-cover" alt="Match" loading="lazy">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition flex items-end p-3">
+                    <div class="flex justify-between items-center w-full">
+                        <p class="text-white text-sm font-medium">✅ Face Match</p>
+                        <button onclick="downloadImage('${url}', '${fileId}')" class="bg-green-500 hover:bg-green-600 p-2 rounded-lg transition">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+            resultsDiv.insertBefore(div, resultsDiv.firstChild);
+        }
+
+        // Download single image
+        async function downloadImage(url, fileId) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `match_${fileId}.jpg`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            } catch (err) {
+                alert('Download failed: ' + err.message);
+            }
+        }
+
+        // Download all images
+        async function downloadAllImages() {
+            const images = document.querySelectorAll('#results img');
+            if (images.length === 0) {
+                alert('No images to download');
+                return;
+            }
+
+            setStatus(`Downloading ${images.length} images...`, 'info');
+            
+            for (let i = 0; i < images.length; i++) {
+                try {
+                    const url = images[i].src;
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `match_${i + 1}.jpg`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } catch (err) {
+                    console.error('Download failed:', err);
+                }
+            }
+            
+            setStatus('✅ All images downloaded!', 'success');
+        }
+
+        // Clear results
+        function clearResults() {
+            if (confirm('Clear all matched photos?')) {
+                document.getElementById('results').innerHTML = '';
+                document.getElementById('emptyState').classList.remove('hidden');
+                totalMatches = 0;
+                foundUrls.clear();
+                updateStats();
+            }
+        }
+
+        // Initialize face-api.js with optimizations
+        async function initFaceAPI() {
+            if (modelsLoaded) return true;
+
+            showLoader('Loading AI models...');
+            updateProgress(10, 'Downloading face detection...');
             
             try {
-                // Ask server to get list of file IDs from Drive
-                const res = await fetch('/scan-drive', {
+                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+                
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                updateProgress(40, 'Loading landmarks...');
+                
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                updateProgress(70, 'Loading face recognition...');
+                
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                updateProgress(90, 'Loading your face data...');
+
+                const res = await fetch('/user-faces', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ driveLink: link, email: userEmail, clientSide: true })
+                    body: JSON.stringify({ email: userEmail })
                 });
                 const data = await res.json();
 
-                if (!data.success) throw new Error(data.error);
+                if (!data.success || !data.faces || data.faces.length === 0) {
+                    hideLoader();
+                    setStatus('❌ No reference photos found. Please re-register.', 'error');
+                    return false;
+                }
 
-                status.innerText = `📸 Found ${data.files.length} photos. Starting face match...`;
-
-                for (let file of data.files) {
-                    // This tells the browser to ask your server for the image instead of Google
-const imageUrl = `/proxy-image?id=${file.id}`;
-                   
-
-                    
+                const userDescriptors = [];
+                
+                for (const faceUrl of data.faces) {
                     try {
-                        const img = await faceapi.fetchImage(imageUrl);
-                        const displaySize = { width: img.width, height: img.height };
-                        const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
-
-                        const results = detections.map(d => faceMatcher.findBestMatch(d.descriptor));
-
-                        if (results.some(r => r.label !== 'unknown')) {
-                            status.innerText = "🔥 Face found! Saving match...";
-                            displayMatch(imageUrl);
-                            // Tell server to save this match to Cloudinary
-                            fetch('/save-match', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({ email: userEmail, imageUrl: imageUrl })
-                            });
+                        const img = await faceapi.fetchImage(faceUrl);
+                        const detections = await faceapi
+                            .detectAllFaces(img)
+                            .withFaceLandmarks()
+                            .withFaceDescriptors();
+                        
+                        if (detections && detections.length > 0) {
+                            detections.forEach(d => userDescriptors.push(d.descriptor));
                         }
                     } catch (e) {
-                        console.log("Skipping a file (possibly too large or not an image)");
+                        console.warn('Failed to process reference photo:', e);
                     }
                 }
-                status.innerText = "✅ Scan complete!";
+
+                if (userDescriptors.length === 0) {
+                    hideLoader();
+                    setStatus('❌ No faces detected in your photos. Upload clear frontal photos.', 'error');
+                    return false;
+                }
+
+                const threshold = parseFloat(document.getElementById('threshold').value);
+                const labeled = new faceapi.LabeledFaceDescriptors('user', userDescriptors);
+                faceMatcher = new faceapi.FaceMatcher([labeled], threshold);
+                
+                modelsLoaded = true;
+                updateProgress(100, 'Ready!');
+                setTimeout(hideLoader, 500);
+                setStatus('✅ AI ready! Paste a Google Drive folder link above.', 'success');
+                return true;
+                
             } catch (err) {
-                status.innerText = "❌ Error: " + err.message;
+                hideLoader();
+                console.error('Init error:', err);
+                setStatus('❌ Failed to load AI. Please refresh the page.', 'error');
+                return false;
             }
         }
 
-        function displayMatch(url) {
-            const img = document.createElement('img');
-            img.src = url;
-            img.className = "w-full h-48 object-cover rounded-lg border-2 border-green-500 shadow-md";
-            document.getElementById('results').appendChild(img);
+        // Process images in batches for better performance
+        async function processBatch(files, startIdx, batchSize) {
+            const batch = files.slice(startIdx, startIdx + batchSize);
+            const promises = batch.map(async (file) => {
+                try {
+                    const imageUrl = `/proxy-image?id=${file.id}`;
+                    const img = await faceapi.fetchImage(imageUrl);
+                    
+                    const detections = await faceapi
+                        .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
+                        .withFaceLandmarks()
+                        .withFaceDescriptors();
+
+                    let foundMatch = false;
+                    for (const detection of detections) {
+                        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+                        
+                        if (bestMatch.label === 'user') {
+                            foundMatch = true;
+                            displayMatch(imageUrl, file.id);
+                            
+                            fetch('/save-match', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ email: userEmail, imageUrl })
+                            }).catch(e => console.error('Save failed:', e));
+                            
+                            break;
+                        }
+                    }
+                    
+                    return foundMatch ? 1 : 0;
+                } catch (e) {
+                    console.warn('Skipped:', file.name, e.message);
+                    return 0;
+                }
+            });
+
+            const results = await Promise.all(promises);
+            return results.reduce((sum, val) => sum + val, 0);
         }
 
-    // This waits for the window and all scripts to be fully loaded
-window.onload = () => {
-    init().catch(err => console.error("Initialization failed:", err));
-};    
+        // Start scan with optimizations
+        async function startScan() {
+            if (isScanning) return;
+
+            if (!modelsLoaded) {
+                const success = await initFaceAPI();
+                if (!success) return;
+            }
+
+            const link = document.getElementById('driveLink').value.trim();
+            
+            if (!link) {
+                setStatus('⚠️ Please paste a Google Drive folder link', 'error');
+                return;
+            }
+
+            if (!link.includes('drive.google.com/drive/folders/')) {
+                setStatus('⚠️ Invalid link. Must be a folder URL', 'error');
+                return;
+            }
+
+            isScanning = true;
+            scanStartTime = Date.now();
+            const scanBtn = document.getElementById('scanBtn');
+            scanBtn.disabled = true;
+            
+            showLoader('Fetching images...');
+            setStatus('🔍 Scanning folder...', 'info');
+            
+            try {
+                const res = await fetch('/scan-drive', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ driveLink: link })
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    hideLoader();
+                    setStatus('❌ ' + (data.error || 'Failed'), 'error');
+                    isScanning = false;
+                    scanBtn.disabled = false;
+                    return;
+                }
+
+                let files = data.files;
+                if (!files || files.length === 0) {
+                    hideLoader();
+                    setStatus('❌ No images found in folder', 'error');
+                    isScanning = false;
+                    scanBtn.disabled = false;
+                    return;
+                }
+
+                // Apply max images limit
+                const maxImages = parseInt(document.getElementById('maxImages').value);
+                if (maxImages > 0 && files.length > maxImages) {
+                    files = files.slice(0, maxImages);
+                    setStatus(`⚠️ Limiting scan to ${maxImages} images (found ${data.files.length} total)`, 'info');
+                }
+
+                updateProgress(0, `Found ${files.length} images. Starting batch analysis...`);
+
+                const batchSize = parseInt(document.getElementById('batchSize').value);
+                let processed = 0;
+                let matches = 0;
+
+                for (let i = 0; i < files.length; i += batchSize) {
+                    if (!isScanning) break; // Allow cancellation
+                    
+                    const batchMatches = await processBatch(files, i, batchSize);
+                    matches += batchMatches;
+                    processed += Math.min(batchSize, files.length - i);
+                    
+                    const percent = (processed / files.length) * 100;
+                    updateProgress(percent, `${processed}/${files.length} analyzed • ${matches} matches`);
+                    updateStats();
+                    
+                    // Small delay to prevent browser freezing
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                totalScanned += processed;
+                totalMatches += matches;
+                updateStats();
+
+                hideLoader();
+                
+                if (matches > 0) {
+                    setStatus(`🎉 Found ${matches} photo(s) of you in ${Math.round((Date.now() - scanStartTime) / 1000)}s!`, 'success');
+                } else {
+                    setStatus('😢 No matches. Try adjusting threshold or uploading clearer reference photos.', 'error');
+                }
+
+            } catch (err) {
+                hideLoader();
+                console.error('Scan error:', err);
+                setStatus('❌ Network error: ' + err.message, 'error');
+            } finally {
+                isScanning = false;
+                scanBtn.disabled = false;
+            }
+        }
+
+        // Load saved matches
+        async function loadSavedMatches() {
+            try {
+                const res = await fetch('/get-matches', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: userEmail })
+                });
+
+                const data = await res.json();
+                if (data.success && data.matches?.length > 0) {
+                    data.matches.forEach((url, idx) => displayMatch(url, `saved_${idx}`));
+                    totalMatches = data.matches.length;
+                    updateStats();
+                } else {
+                    document.getElementById('emptyState').classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Load error:', err);
+                document.getElementById('emptyState').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('userEmail');
+            window.location.href = '/';
+        }
+
+        window.onload = async () => {
+            await loadSavedMatches();
+            setStatus('📂 Paste a Google Drive folder link and click "Start Scan"', 'info');
+        };
     </script>
 </body>
 </html>
