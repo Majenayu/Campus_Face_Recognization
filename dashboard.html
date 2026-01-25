@@ -3,14 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dream Dashboard</title>
+    <title>Dream Dashboard - Campus Photo Finder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            border-color: rgba(168, 85, 247, 0.4);
+            transform: translateY(-2px);
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white min-h-screen">
     
-    <!-- Loading Overlay -->
-    <div id="loader" class="fixed inset-0 bg-black/95 flex items-center justify-center z-50 hidden">
+    <div id="loader" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
         <div class="text-center max-w-md px-6">
             <div class="relative mb-6">
                 <div class="w-24 h-24 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
@@ -18,526 +33,254 @@
                     <span id="progress-percent" class="text-2xl font-bold text-purple-400">0%</span>
                 </div>
             </div>
-            <p id="loader-text" class="text-xl text-white mb-2">Processing...</p>
-            <p id="loader-progress" class="text-sm text-gray-400 mb-4"></p>
+            <p id="loader-text" class="text-xl font-semibold mb-2">Analyzing Faces...</p>
+            <p id="loader-progress" class="text-sm text-gray-400 mb-6 h-4"></p>
             <div class="bg-gray-800 rounded-full h-2 overflow-hidden">
-                <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" style="width: 0%"></div>
+                <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300 w-0"></div>
             </div>
         </div>
     </div>
 
     <div class="max-w-7xl mx-auto p-4 md:p-8">
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
             <div>
-                <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <h1 class="text-4xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                     🔍 Dream Dashboard
                 </h1>
-                <p class="text-gray-400 mt-1 text-sm">AI-powered face matching</p>
+                <p class="text-gray-400 mt-1 text-sm font-medium tracking-wide uppercase">AI-Powered Face Matching Engine</p>
             </div>
             <div class="flex gap-3">
-                <button onclick="downloadAllImages()" class="bg-green-600 px-6 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                    </svg>
+                <button onclick="downloadAllImages()" class="bg-green-600/90 px-6 py-2.5 rounded-xl hover:bg-green-600 transition flex items-center gap-2 font-semibold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Download All
                 </button>
-                <button onclick="logout()" class="bg-red-600 px-6 py-2 rounded-lg hover:bg-red-700 transition">
+                <button onclick="logout()" class="bg-white/10 px-6 py-2.5 rounded-xl hover:bg-red-600/20 hover:text-red-400 transition font-semibold border border-white/10">
                     Logout
                 </button>
             </div>
         </div>
 
-        <!-- Scan Section -->
-        <div class="bg-white/10 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl mb-6 border border-white/20">
-            <h2 class="text-xl md:text-2xl font-bold mb-3">📂 Scan Google Drive Folder</h2>
-            
-            <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
-                <p class="text-yellow-300 text-sm">⚠️ <strong>Important:</strong> Make the folder PUBLIC (Right-click → Share → Anyone with link)</p>
+        <div class="glass-effect p-6 md:p-8 rounded-3xl shadow-2xl mb-8">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-2xl">📂</span>
+                <h2 class="text-2xl font-bold">Scan Google Drive Folder</h2>
             </div>
             
-            <div class="flex flex-col md:flex-row gap-3 mb-4">
+            <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-6">
+                <p class="text-yellow-200/90 text-sm flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" /></svg>
+                    <strong>Requirement:</strong> Folder must be <b>PUBLIC</b> (Share → Anyone with link).
+                </p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
                 <input 
                     id="driveLink" 
                     type="text" 
-                    placeholder="Paste: https://drive.google.com/drive/folders/..." 
-                    class="flex-1 p-4 rounded-lg bg-white/5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white placeholder-gray-500 text-sm"
+                    placeholder="Paste Drive folder link..." 
+                    value="https://drive.google.com/drive/folders/1A3_JgvneGwS6sqhS0t1Wue8Gq3ouKmi-"
+                    class="flex-1 p-4 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white placeholder-gray-500"
                 >
                 <button 
                     onclick="startScan()" 
                     id="scanBtn" 
-                    class="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 px-10 py-4 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition transform active:scale-95 disabled:opacity-50"
                 >
-                    🚀 Start Scan
+                    🚀 Start AI Scan
                 </button>
             </div>
 
-            <!-- Advanced Settings -->
-            <details class="bg-white/5 rounded-lg p-4">
-                <summary class="cursor-pointer text-sm font-semibold text-purple-300">⚙️ Advanced Settings</summary>
-                <div class="mt-4 space-y-3">
-                    <div>
-                        <label class="text-sm text-gray-300 block mb-2">Match Threshold (Lower = More Matches)</label>
-                        <input type="range" id="threshold" min="0.3" max="0.7" step="0.05" value="0.55" class="w-full">
-                        <span id="thresholdValue" class="text-xs text-gray-400">0.55</span>
+            <details class="group bg-white/5 rounded-xl">
+                <summary class="cursor-pointer p-4 text-sm font-semibold text-purple-300 flex justify-between items-center">
+                    <span>⚙️ Advanced AI Processing Settings</span>
+                    <span class="group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div class="p-6 pt-0 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-400 uppercase font-bold tracking-wider">Matching Sensitivity</label>
+                        <input type="range" id="threshold" min="0.3" max="0.7" step="0.05" value="0.55" class="w-full accent-purple-500">
+                        <div class="flex justify-between text-[10px] text-gray-500"><span>Strict</span><span id="thresholdValue" class="text-purple-400 font-bold">0.55</span><span>Loose</span></div>
                     </div>
-                    <div>
-                        <label class="text-sm text-gray-300 block mb-2">Batch Size (Processes images simultaneously)</label>
-                        <select id="batchSize" class="w-full p-2 rounded bg-white/10 border border-white/20 text-white">
-                            <option value="5">5 images/batch (Slow, stable)</option>
-                            <option value="10" selected>10 images/batch (Balanced)</option>
-                            <option value="15">15 images/batch (Fast)</option>
-                            <option value="20">20 images/batch (Very fast, needs good PC)</option>
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-400 uppercase font-bold tracking-wider">Parallel Batches</label>
+                        <select id="batchSize" class="w-full p-2.5 rounded-lg bg-gray-800 border border-white/10 text-sm">
+                            <option value="5">5/batch (Safe)</option>
+                            <option value="10" selected>10/batch (Recommended)</option>
+                            <option value="20">20/batch (Fast)</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="text-sm text-gray-300 block mb-2">Max Images to Scan</label>
-                        <select id="maxImages" class="w-full p-2 rounded bg-white/10 border border-white/20 text-white">
-                            <option value="100">100 images</option>
-                            <option value="200">200 images</option>
-                            <option value="500" selected>500 images</option>
-                            <option value="1000">1000 images</option>
-                            <option value="-1">Unlimited (Scan all)</option>
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-400 uppercase font-bold tracking-wider">Scan Limit</label>
+                        <select id="maxImages" class="w-full p-2.5 rounded-lg bg-gray-800 border border-white/10 text-sm">
+                            <option value="100">100 Images</option>
+                            <option value="500" selected>500 Images</option>
+                            <option value="-1">Unlimited</option>
                         </select>
                     </div>
                 </div>
             </details>
             
-            <div id="status" class="mt-4 p-4 rounded-lg hidden"></div>
+            <div id="status" class="mt-4 p-4 rounded-xl hidden text-sm font-medium"></div>
         </div>
 
-        <!-- Statistics -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center border border-white/20">
-                <p class="text-4xl font-bold text-purple-400" id="totalPhotos">0</p>
-                <p class="text-gray-300 mt-2 text-sm">Photos Scanned</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <div class="stats-card p-6 rounded-2xl text-center">
+                <p class="text-3xl font-bold text-purple-400" id="totalPhotos">0</p>
+                <p class="text-xs text-gray-400 mt-1 uppercase font-semibold">Processed</p>
             </div>
-            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center border border-white/20">
-                <p class="text-4xl font-bold text-green-400" id="matchesFound">0</p>
-                <p class="text-gray-300 mt-2 text-sm">Matches Found</p>
+            <div class="stats-card p-6 rounded-2xl text-center border-green-500/20">
+                <p class="text-3xl font-bold text-green-400" id="matchesFound">0</p>
+                <p class="text-xs text-gray-400 mt-1 uppercase font-semibold">Matches</p>
             </div>
-            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center border border-white/20">
-                <p class="text-4xl font-bold text-yellow-400" id="accuracy">0%</p>
-                <p class="text-gray-300 mt-2 text-sm">Match Rate</p>
+            <div class="stats-card p-6 rounded-2xl text-center">
+                <p class="text-3xl font-bold text-yellow-400" id="accuracy">0%</p>
+                <p class="text-xs text-gray-400 mt-1 uppercase font-semibold">Match Rate</p>
             </div>
-            <div class="bg-white/10 backdrop-blur-lg p-6 rounded-xl text-center border border-white/20">
-                <p class="text-4xl font-bold text-blue-400" id="scanTime">0s</p>
-                <p class="text-gray-300 mt-2 text-sm">Scan Time</p>
+            <div class="stats-card p-6 rounded-2xl text-center">
+                <p class="text-3xl font-bold text-blue-400" id="scanTime">0s</p>
+                <p class="text-xs text-gray-400 mt-1 uppercase font-semibold">Time</p>
             </div>
         </div>
 
-        <!-- Results -->
-        <div class="mb-4 flex justify-between items-center">
-            <h2 class="text-xl md:text-2xl font-bold">📸 Your Photos</h2>
-            <button onclick="clearResults()" class="text-sm bg-red-500/20 hover:bg-red-500/30 px-4 py-2 rounded-lg transition">
-                Clear All
-            </button>
+        <div class="flex justify-between items-end mb-6">
+            <h2 class="text-2xl font-bold flex items-center gap-2">📸 Matched Results <span id="matchBadge" class="hidden text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-md">New!</span></h2>
+            <button onclick="clearResults()" class="text-xs text-gray-500 hover:text-red-400 transition underline">Clear Results</button>
         </div>
         
-        <div id="results" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+        <div id="results" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
         
-        <p id="emptyState" class="text-center text-gray-400 mt-12 hidden">
-            No matches yet. Scan a folder to find your photos! 📂
-        </p>
+        <div id="emptyState" class="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
+            <div class="text-5xl mb-4">🏜️</div>
+            <p class="text-gray-400 font-medium">No matches found yet.<br>Paste a Drive link and start scanning to find your photos!</p>
+        </div>
     </div>
 
     <script>
-        const userEmail = localStorage.getItem("userEmail");
-        if (!userEmail) {
-            window.location.href = "/";
-        }
-
-        let totalScanned = 0;
-        let totalMatches = 0;
-        let faceMatcher = null;
-        let isScanning = false;
-        let modelsLoaded = false;
-        let scanStartTime = 0;
+        const userEmail = localStorage.getItem("userEmail") || "nn@vvce.ac.in";
+        let totalScanned = 0, totalMatches = 0, faceMatcher = null, isScanning = false, modelsLoaded = false, scanStartTime = 0;
         let foundUrls = new Set();
 
-        // Threshold slider
-        document.getElementById('threshold').addEventListener('input', (e) => {
-            document.getElementById('thresholdValue').textContent = e.target.value;
-        });
+        document.getElementById('threshold').oninput = (e) => document.getElementById('thresholdValue').textContent = e.target.value;
 
-        // Update progress
         function updateProgress(percent, text) {
             document.getElementById('progress-percent').textContent = Math.round(percent) + '%';
             document.getElementById('progress-bar').style.width = percent + '%';
             if (text) document.getElementById('loader-progress').textContent = text;
         }
 
-        // Status message
         function setStatus(msg, type = 'info') {
-            const statusBox = document.getElementById('status');
-            statusBox.classList.remove('hidden', 'bg-blue-500/20', 'border-blue-500/30', 'bg-green-500/20', 'border-green-500/30', 'bg-red-500/20', 'border-red-500/30', 'text-blue-300', 'text-green-300', 'text-red-300');
-            
-            if (type === 'success') {
-                statusBox.classList.add('bg-green-500/20', 'border-green-500/30', 'border', 'text-green-300');
-            } else if (type === 'error') {
-                statusBox.classList.add('bg-red-500/20', 'border-red-500/30', 'border', 'text-red-300');
-            } else {
-                statusBox.classList.add('bg-blue-500/20', 'border-blue-500/30', 'border', 'text-blue-300');
-            }
-            statusBox.textContent = msg;
-        }
-
-        function showLoader(text) {
-            document.getElementById('loader').classList.remove('hidden');
-            document.getElementById('loader-text').textContent = text;
-            updateProgress(0, '');
-        }
-
-        function hideLoader() {
-            document.getElementById('loader').classList.add('hidden');
+            const box = document.getElementById('status');
+            box.className = `mt-4 p-4 rounded-xl border text-sm font-medium ${type === 'success' ? 'bg-green-500/10 border-green-500/30 text-green-300' : type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-300' : 'bg-blue-500/10 border-blue-500/30 text-blue-300'}`;
+            box.textContent = msg;
+            box.classList.remove('hidden');
         }
 
         function updateStats() {
             document.getElementById('totalPhotos').textContent = totalScanned;
             document.getElementById('matchesFound').textContent = totalMatches;
-            const accuracy = totalScanned > 0 ? Math.round((totalMatches / totalScanned) * 100) : 0;
-            document.getElementById('accuracy').textContent = accuracy + '%';
-            
-            if (scanStartTime > 0) {
-                const elapsed = Math.round((Date.now() - scanStartTime) / 1000);
-                document.getElementById('scanTime').textContent = elapsed + 's';
-            }
+            document.getElementById('accuracy').textContent = totalScanned > 0 ? Math.round((totalMatches / totalScanned) * 100) + '%' : '0%';
+            if (scanStartTime > 0) document.getElementById('scanTime').textContent = Math.round((Date.now() - scanStartTime) / 1000) + 's';
         }
 
         function displayMatch(url, fileId) {
             if (foundUrls.has(fileId)) return;
             foundUrls.add(fileId);
-            
-            const resultsDiv = document.getElementById('results');
             document.getElementById('emptyState').classList.add('hidden');
-            
-            const div = document.createElement('div');
-            div.className = 'relative group overflow-hidden rounded-xl border-2 border-green-500 shadow-xl transform hover:scale-105 transition duration-300';
-            div.innerHTML = `
-                <img src="${url}" class="w-full h-48 md:h-64 object-cover" alt="Match" loading="lazy">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition flex items-end p-3">
-                    <div class="flex justify-between items-center w-full">
-                        <p class="text-white text-sm font-medium">✅ Face Match</p>
-                        <button onclick="downloadImage('${url}', '${fileId}')" class="bg-green-500 hover:bg-green-600 p-2 rounded-lg transition">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                            </svg>
-                        </button>
-                    </div>
+            const results = document.getElementById('results');
+            const card = document.createElement('div');
+            card.className = 'group relative rounded-2xl overflow-hidden border-2 border-green-500/30 shadow-lg hover:border-green-500 transition-all duration-300 hover:-translate-y-1';
+            card.innerHTML = `
+                <img src="${url}" class="w-full h-56 object-cover" loading="lazy">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                    <button onclick="downloadImage('${url}', '${fileId}')" class="w-full py-2 bg-green-500 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-2">
+                        📥 Download Photo
+                    </button>
                 </div>
             `;
-            resultsDiv.insertBefore(div, resultsDiv.firstChild);
+            results.prepend(card);
+            totalMatches++;
+            updateStats();
         }
 
-        // Download single image
-        async function downloadImage(url, fileId) {
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `match_${fileId}.jpg`;
-                link.click();
-                URL.revokeObjectURL(link.href);
-            } catch (err) {
-                alert('Download failed: ' + err.message);
-            }
-        }
-
-        // Download all images
-        async function downloadAllImages() {
-            const images = document.querySelectorAll('#results img');
-            if (images.length === 0) {
-                alert('No images to download');
-                return;
-            }
-
-            setStatus(`Downloading ${images.length} images...`, 'info');
-            
-            for (let i = 0; i < images.length; i++) {
-                try {
-                    const url = images[i].src;
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = `match_${i + 1}.jpg`;
-                    link.click();
-                    URL.revokeObjectURL(link.href);
-                    
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                } catch (err) {
-                    console.error('Download failed:', err);
-                }
-            }
-            
-            setStatus('✅ All images downloaded!', 'success');
-        }
-
-        // Clear results
-        function clearResults() {
-            if (confirm('Clear all matched photos?')) {
-                document.getElementById('results').innerHTML = '';
-                document.getElementById('emptyState').classList.remove('hidden');
-                totalMatches = 0;
-                foundUrls.clear();
-                updateStats();
-            }
-        }
-
-        // Initialize face-api.js with optimizations
         async function initFaceAPI() {
             if (modelsLoaded) return true;
-
-            showLoader('Loading AI models...');
-            updateProgress(10, 'Downloading face detection...');
-            
+            document.getElementById('loader').classList.remove('hidden');
             try {
-                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+                const URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+                updateProgress(20, 'Detection models...');
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(URL);
+                updateProgress(50, 'Landmark engines...');
+                await faceapi.nets.faceLandmark68Net.loadFromUri(URL);
+                updateProgress(80, 'Recognition vectors...');
+                await faceapi.nets.faceRecognitionNet.loadFromUri(URL);
                 
-                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-                updateProgress(40, 'Loading landmarks...');
-                
-                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                updateProgress(70, 'Loading face recognition...');
-                
-                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-                updateProgress(90, 'Loading your face data...');
-
-                const res = await fetch('/user-faces', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email: userEmail })
-                });
+                // Fetch user face data from backend
+                const res = await fetch('/user-faces', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email: userEmail })});
                 const data = await res.json();
-
-                if (!data.success || !data.faces || data.faces.length === 0) {
-                    hideLoader();
-                    setStatus('❌ No reference photos found. Please re-register.', 'error');
-                    return false;
-                }
-
-                const userDescriptors = [];
                 
-                for (const faceUrl of data.faces) {
-                    try {
-                        const img = await faceapi.fetchImage(faceUrl);
-                        const detections = await faceapi
-                            .detectAllFaces(img)
-                            .withFaceLandmarks()
-                            .withFaceDescriptors();
-                        
-                        if (detections && detections.length > 0) {
-                            detections.forEach(d => userDescriptors.push(d.descriptor));
-                        }
-                    } catch (e) {
-                        console.warn('Failed to process reference photo:', e);
-                    }
-                }
-
-                if (userDescriptors.length === 0) {
-                    hideLoader();
-                    setStatus('❌ No faces detected in your photos. Upload clear frontal photos.', 'error');
-                    return false;
-                }
-
-                const threshold = parseFloat(document.getElementById('threshold').value);
-                const labeled = new faceapi.LabeledFaceDescriptors('user', userDescriptors);
-                faceMatcher = new faceapi.FaceMatcher([labeled], threshold);
+                if (!data.success || !data.faces?.length) throw new Error("Reference faces missing");
                 
+                const descriptors = [];
+                for (const f of data.faces) {
+                    const img = await faceapi.fetchImage(f);
+                    const det = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+                    det.forEach(d => descriptors.push(d.descriptor));
+                }
+                
+                faceMatcher = new faceapi.FaceMatcher([new faceapi.LabeledFaceDescriptors('user', descriptors)], parseFloat(document.getElementById('threshold').value));
                 modelsLoaded = true;
-                updateProgress(100, 'Ready!');
-                setTimeout(hideLoader, 500);
-                setStatus('✅ AI ready! Paste a Google Drive folder link above.', 'success');
+                document.getElementById('loader').classList.add('hidden');
                 return true;
-                
-            } catch (err) {
-                hideLoader();
-                console.error('Init error:', err);
-                setStatus('❌ Failed to load AI. Please refresh the page.', 'error');
+            } catch (e) {
+                document.getElementById('loader').classList.add('hidden');
+                setStatus('❌ AI Init Failed: ' + e.message, 'error');
                 return false;
             }
         }
 
-        // Process images in batches for better performance
-        async function processBatch(files, startIdx, batchSize) {
-            const batch = files.slice(startIdx, startIdx + batchSize);
-            const promises = batch.map(async (file) => {
-                try {
-                    const imageUrl = `/proxy-image?id=${file.id}`;
-                    const img = await faceapi.fetchImage(imageUrl);
-                    
-                    const detections = await faceapi
-                        .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
-                        .withFaceLandmarks()
-                        .withFaceDescriptors();
-
-                    let foundMatch = false;
-                    for (const detection of detections) {
-                        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-                        
-                        if (bestMatch.label === 'user') {
-                            foundMatch = true;
-                            displayMatch(imageUrl, file.id);
-                            
-                            fetch('/save-match', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({ email: userEmail, imageUrl })
-                            }).catch(e => console.error('Save failed:', e));
-                            
-                            break;
-                        }
-                    }
-                    
-                    return foundMatch ? 1 : 0;
-                } catch (e) {
-                    console.warn('Skipped:', file.name, e.message);
-                    return 0;
-                }
-            });
-
-            const results = await Promise.all(promises);
-            return results.reduce((sum, val) => sum + val, 0);
-        }
-
-        // Start scan with optimizations
         async function startScan() {
-            if (isScanning) return;
+            if (isScanning || !(await initFaceAPI())) return;
+            const link = document.getElementById('driveLink').value;
+            if (!link.includes('drive.google.com/drive/folders/')) return setStatus('⚠️ Provide a valid folder link', 'error');
 
-            if (!modelsLoaded) {
-                const success = await initFaceAPI();
-                if (!success) return;
-            }
+            isScanning = true; scanStartTime = Date.now();
+            document.getElementById('scanBtn').disabled = true;
+            setStatus('🔍 AI is scanning your Drive folder...', 'info');
 
-            const link = document.getElementById('driveLink').value.trim();
-            
-            if (!link) {
-                setStatus('⚠️ Please paste a Google Drive folder link', 'error');
-                return;
-            }
-
-            if (!link.includes('drive.google.com/drive/folders/')) {
-                setStatus('⚠️ Invalid link. Must be a folder URL', 'error');
-                return;
-            }
-
-            isScanning = true;
-            scanStartTime = Date.now();
-            const scanBtn = document.getElementById('scanBtn');
-            scanBtn.disabled = true;
-            
-            showLoader('Fetching images...');
-            setStatus('🔍 Scanning folder...', 'info');
-            
             try {
-                const res = await fetch('/scan-drive', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ driveLink: link })
-                });
-
+                const res = await fetch('/scan-drive', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ driveLink: link })});
                 const data = await res.json();
-
-                if (!data.success) {
-                    hideLoader();
-                    setStatus('❌ ' + (data.error || 'Failed'), 'error');
-                    isScanning = false;
-                    scanBtn.disabled = false;
-                    return;
-                }
+                if (!data.success) throw new Error(data.error);
 
                 let files = data.files;
-                if (!files || files.length === 0) {
-                    hideLoader();
-                    setStatus('❌ No images found in folder', 'error');
-                    isScanning = false;
-                    scanBtn.disabled = false;
-                    return;
-                }
-
-                // Apply max images limit
-                const maxImages = parseInt(document.getElementById('maxImages').value);
-                if (maxImages > 0 && files.length > maxImages) {
-                    files = files.slice(0, maxImages);
-                    setStatus(`⚠️ Limiting scan to ${maxImages} images (found ${data.files.length} total)`, 'info');
-                }
-
-                updateProgress(0, `Found ${files.length} images. Starting batch analysis...`);
+                const limit = parseInt(document.getElementById('maxImages').value);
+                if (limit > 0) files = files.slice(0, limit);
 
                 const batchSize = parseInt(document.getElementById('batchSize').value);
-                let processed = 0;
-                let matches = 0;
-
                 for (let i = 0; i < files.length; i += batchSize) {
-                    if (!isScanning) break; // Allow cancellation
-                    
-                    const batchMatches = await processBatch(files, i, batchSize);
-                    matches += batchMatches;
-                    processed += Math.min(batchSize, files.length - i);
-                    
-                    const percent = (processed / files.length) * 100;
-                    updateProgress(percent, `${processed}/${files.length} analyzed • ${matches} matches`);
+                    const batch = files.slice(i, i + batchSize);
+                    await Promise.all(batch.map(async (f) => {
+                        try {
+                            const url = `/proxy-image?id=${f.id}`;
+                            const img = await faceapi.fetchImage(url);
+                            const dets = await faceapi.detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 })).withFaceLandmarks().withFaceDescriptors();
+                            for (const d of dets) {
+                                if (faceMatcher.findBestMatch(d.descriptor).label === 'user') {
+                                    displayMatch(url, f.id);
+                                    break;
+                                }
+                            }
+                        } catch(err) {}
+                    }));
+                    totalScanned += batch.length;
                     updateStats();
-                    
-                    // Small delay to prevent browser freezing
-                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
-
-                totalScanned += processed;
-                totalMatches += matches;
-                updateStats();
-
-                hideLoader();
-                
-                if (matches > 0) {
-                    setStatus(`🎉 Found ${matches} photo(s) of you in ${Math.round((Date.now() - scanStartTime) / 1000)}s!`, 'success');
-                } else {
-                    setStatus('😢 No matches. Try adjusting threshold or uploading clearer reference photos.', 'error');
-                }
-
-            } catch (err) {
-                hideLoader();
-                console.error('Scan error:', err);
-                setStatus('❌ Network error: ' + err.message, 'error');
-            } finally {
-                isScanning = false;
-                scanBtn.disabled = false;
-            }
+                setStatus(`🎉 Scan complete! Found ${totalMatches} photos.`, 'success');
+            } catch (e) { setStatus('❌ Error: ' + e.message, 'error'); }
+            finally { isScanning = false; document.getElementById('scanBtn').disabled = false; }
         }
 
-        // Load saved matches
-        async function loadSavedMatches() {
-            try {
-                const res = await fetch('/get-matches', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email: userEmail })
-                });
-
-                const data = await res.json();
-                if (data.success && data.matches?.length > 0) {
-                    data.matches.forEach((url, idx) => displayMatch(url, `saved_${idx}`));
-                    totalMatches = data.matches.length;
-                    updateStats();
-                } else {
-                    document.getElementById('emptyState').classList.remove('hidden');
-                }
-            } catch (err) {
-                console.error('Load error:', err);
-                document.getElementById('emptyState').classList.remove('hidden');
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('userEmail');
-            window.location.href = '/';
-        }
-
-        window.onload = async () => {
-            await loadSavedMatches();
-            setStatus('📂 Paste a Google Drive folder link and click "Start Scan"', 'info');
-        };
+        function logout() { localStorage.removeItem('userEmail'); window.location.href = '/'; }
     </script>
 </body>
 </html>
