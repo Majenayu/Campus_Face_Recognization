@@ -12,17 +12,16 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .dark .glass-effect { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); }
         .fade-in { animation: fadeIn 0.6s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .slide-in { animation: slideIn 0.4s ease-out; }
-        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .pulse-button { transition: all 0.3s ease; }
         .pulse-button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); }
+        .input-field {
+            @apply w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400;
+        }
     </style>
 </head>
 <body class="gradient-bg min-h-screen flex items-center justify-center px-4">
-    <!-- Loader -->
     <div class="loader-wrap fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900 z-50 hidden" id="loader">
         <div class="relative">
             <div class="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
@@ -30,9 +29,7 @@
         </div>
     </div>
 
-    <!-- Main Container -->
     <div class="w-full max-w-md fade-in">
-        <!-- Header -->
         <div class="text-center mb-8">
             <div class="inline-block p-4 rounded-full glass-effect mb-4">
                 <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,9 +40,7 @@
             <p class="text-white/70 text-lg">Your journey begins here</p>
         </div>
 
-        <!-- Forms Container -->
         <div class="glass-effect rounded-2xl p-8 shadow-2xl">
-            <!-- Login Form -->
             <div id="login-form" class="space-y-6">
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold text-white mb-2">Login</h2>
@@ -53,9 +48,9 @@
                 </div>
                 
                 <form id="login-form-submit" class="space-y-5">
-                    <input id="login-email" type="email" placeholder="Enter your email" required
+                    <input id="login-email" type="email" placeholder="Enter your email" value="nn@vvce.ac.in" required
                         class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <input id="login-password" type="password" placeholder="Enter your password" required
+                    <input id="login-password" type="password" placeholder="Enter your password" value="nn" required
                         class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400">
                     <button type="submit" class="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl pulse-button">Login</button>
                 </form>
@@ -64,171 +59,121 @@
                     <span class="text-white/70">Don't have an account?</span>
                     <button id="show-register" class="text-blue-300 hover:text-blue-200 font-semibold ml-2">Register</button>
                 </div>
-                
                 <p id="login-error" class="text-center text-red-300 hidden bg-red-500/20 py-2 px-4 rounded-lg"></p>
             </div>
 
-            <!-- Register Form -->
             <div id="register-form" class="space-y-6 hidden">
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold text-white mb-2">Register</h2>
                     <div class="w-20 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mx-auto"></div>
                 </div>
                 
-                <form id="register-form-submit" class="space-y-5" enctype="multipart/form-data">
-  <input id="register-name" type="text" placeholder="Name" class="input" required />
-  <input id="register-email" type="email" placeholder="Email" class="input" required />
-  <input id="register-password" type="password" placeholder="Password" class="input" required />
-  <input id="register-confirm-password" type="password" placeholder="Confirm Password" class="input" required />
+                <form id="register-form-submit" class="space-y-4" enctype="multipart/form-data">
+                    <input id="register-name" type="text" placeholder="Full Name" required class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                    <input id="register-email" type="email" placeholder="Email" required class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                    <input id="register-password" type="password" placeholder="Password" required class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none">
+                    <input id="register-confirm-password" type="password" placeholder="Confirm Password" required class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none">
 
-  <!-- Upload -->
-  <input id="photo-upload" type="file" multiple accept="image/*"
-    class="w-full text-white" />
+                    <div class="space-y-2">
+                        <label class="text-white/70 text-sm">Upload Reference Photos</label>
+                        <input id="photo-upload" type="file" multiple accept="image/*" class="w-full text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600" />
+                    </div>
 
-  <!-- Camera -->
-  <video id="video" autoplay class="w-full rounded-lg"></video>
-  <button type="button" id="capture" class="bg-blue-500 px-4 py-2 rounded">
-    Capture Photo
-  </button>
+                    <div class="space-y-2">
+                        <video id="video" autoplay class="w-full rounded-lg border border-white/20 bg-black/20"></video>
+                        <button type="button" id="capture" class="w-full py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition">Capture Live Selfie</button>
+                    </div>
 
-  <canvas id="canvas" class="hidden"></canvas>
+                    <canvas id="canvas" class="hidden"></canvas>
 
-  <button type="submit" class="w-full py-3 bg-purple-600 rounded-xl">
-    Register
-  </button>
-</form>
-
+                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-xl pulse-button">Create Account</button>
+                </form>
                 
                 <div class="text-center">
                     <span class="text-white/70">Already have an account?</span>
                     <button id="show-login" class="text-purple-300 hover:text-purple-200 font-semibold ml-2">Login</button>
                 </div>
-                
                 <p id="register-error" class="text-center text-red-300 hidden bg-red-500/20 py-2 px-4 rounded-lg"></p>
             </div>
         </div>
     </div>
 
-  <script>
-/* ---------- TOGGLE LOGIN / REGISTER ---------- */
-function toggleForm(showRegister) {
-  document.getElementById('login-form').classList.toggle('hidden', showRegister);
-  document.getElementById('register-form').classList.toggle('hidden', !showRegister);
-}
-document.getElementById('show-register').onclick = () => toggleForm(true);
-document.getElementById('show-login').onclick = () => toggleForm(false);
+    <script>
+        const toggleForm = (isReg) => {
+            document.getElementById('login-form').classList.toggle('hidden', isReg);
+            document.getElementById('register-form').classList.toggle('hidden', !isReg);
+        };
+        document.getElementById('show-register').onclick = () => toggleForm(true);
+        document.getElementById('show-login').onclick = () => toggleForm(false);
 
-/* ---------- LOADER ---------- */
-function toggleLoader(show) {
-  document.getElementById('loader').classList.toggle('hidden', !show);
-}
+        function toggleLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
 
-/* ---------- CAMERA SETUP ---------- */
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const captureBtn = document.getElementById("capture");
-const photoInput = document.getElementById("photo-upload");
-const capturedImages = [];
+        /* CAMERA */
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const captureBtn = document.getElementById("capture");
+        const photoInput = document.getElementById("photo-upload");
+        const capturedImages = [];
 
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream)
-  .catch(() => console.warn("Camera access denied"));
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => video.srcObject = stream)
+            .catch(() => console.warn("Camera blocked"));
 
-captureBtn.onclick = () => {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext("2d").drawImage(video, 0, 0);
-  canvas.toBlob(blob => {
-    capturedImages.push(blob);
-    alert("Photo captured ✔");
-  }, "image/jpeg");
-};
+        captureBtn.onclick = () => {
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext("2d").drawImage(video, 0, 0);
+            canvas.toBlob(b => { capturedImages.push(b); alert("Selfie captured! ✔"); }, "image/jpeg");
+        };
 
-/* ---------- LOGIN ---------- */
-document.getElementById("login-form-submit").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  toggleLoader(true);
+        /* LOGIN */
+        document.getElementById("login-form-submit").onsubmit = async (e) => {
+            e.preventDefault(); toggleLoader(true);
+            const email = document.getElementById("login-email").value;
+            const password = document.getElementById("login-password").value;
+            try {
+                const res = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                toggleLoader(false);
+                if (data.success) { localStorage.setItem("userEmail", email); window.location.href = '/dashboard'; }
+                else { 
+                    const err = document.getElementById("login-error");
+                    err.textContent = "Access Denied: Invalid Credentials";
+                    err.classList.remove("hidden");
+                }
+            } catch { toggleLoader(false); }
+        };
 
-  const email = document.getElementById("login-email").value;
-  const password = document.getElementById("login-password").value;
-  const errorEl = document.getElementById("login-error");
+        /* REGISTER */
+        document.getElementById("register-form-submit").onsubmit = async (e) => {
+            e.preventDefault();
+            const pass = document.getElementById("register-password").value;
+            const conf = document.getElementById("register-confirm-password").value;
+            if (pass !== conf) return alert("Passwords mismatch!");
+            
+            toggleLoader(true);
+            const fd = new FormData();
+            fd.append("name", document.getElementById("register-name").value);
+            fd.append("email", document.getElementById("register-email").value);
+            fd.append("password", pass);
 
-  try {
-    const res = await fetch("/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
+            for (const f of photoInput.files) fd.append("photos", f);
+            for (const b of capturedImages) fd.append("photos", b);
 
-    const data = await res.json();
-    toggleLoader(false);
-
-    if (data.success) {
-    localStorage.setItem("userEmail", email);
-    window.location.href = '/dashboard';
-}
-
-    else {
-      errorEl.textContent = "Invalid credentials";
-      errorEl.classList.remove("hidden");
-    }
-  } catch {
-    toggleLoader(false);
-  }
-});
-
-/* ---------- REGISTER (SINGLE, CORRECT HANDLER) ---------- */
-document.getElementById("register-form-submit").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  toggleLoader(true);
-
-  const name = document.getElementById("register-name").value;
-  const email = document.getElementById("register-email").value;
-  const password = document.getElementById("register-password").value;
-  const confirm = document.getElementById("register-confirm-password").value;
-  const errorEl = document.getElementById("register-error");
-
-  if (password !== confirm) {
-    toggleLoader(false);
-    errorEl.textContent = "Passwords do not match";
-    errorEl.classList.remove("hidden");
-    return;
-  }
-
-  const fd = new FormData();
-  fd.append("name", name);
-  fd.append("email", email);
-  fd.append("password", password);
-
-  for (const file of photoInput.files) fd.append("photos", file);
-  for (const blob of capturedImages) fd.append("photos", blob);
-
-  try {
-    const res = await fetch("/register", {
-      method: "POST",
-      body: fd
-    });
-
-    const data = await res.json();
-    toggleLoader(false);
-
-   if (data.success) {
-    localStorage.setItem("userEmail", email);
-    window.location.href = '/dashboard';
-}
-
-else {
-      errorEl.textContent = data.error;
-      errorEl.classList.remove("hidden");
-    }
-  } catch (err) {
-    toggleLoader(false);
-    errorEl.textContent = "Registration failed";
-    errorEl.classList.remove("hidden");
-  }
-});
-</script>
-
-
+            try {
+                const res = await fetch("/register", { method: "POST", body: fd });
+                const data = await res.json();
+                toggleLoader(false);
+                if (data.success) { 
+                    localStorage.setItem("userEmail", document.getElementById("register-email").value);
+                    window.location.href = '/dashboard'; 
+                }
+                else { alert(data.error); }
+            } catch { toggleLoader(false); }
+        };
+    </script>
 </body>
 </html>
