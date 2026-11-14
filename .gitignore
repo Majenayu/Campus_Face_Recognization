@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+uploads/
+dist/
+build/
+.DS_Store

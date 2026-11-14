@@ -46,6 +46,8 @@ python face_service.py
 
 Face images and identity data are sensitive biometric information. This prototype needs strict authorization, secure session handling, HTTPS, retention/deletion controls, request validation, and a privacy/legal review before real campus use.
 
+See [`docs/API.md`](docs/API.md) for the route summary and [`SECURITY.md`](SECURITY.md) for reporting and biometric-data handling guidance.
+
 ## Status
 
 Prototype. No automated test suite is declared.
